@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>8266 Commands</title>
+<meta name="viewport" content="width=600">
+</head>
+<body>
+<div id='field'>
+    <div id='joystick' draggeble='false'></div>
+    <div id='crossHorisontal'></div>
+    <div id='crossVertical'></div>
+</div>
+<div id='gearMeter'>GEAR-
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+    <div class='gearMeter'></div>
+</div>
+<div id='speedMeter'>SPEED
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+    <div class='speedMeter'></div>
+</div>
+<div id='log'></div>
+<div id='logX'></div>
+<div id='logY'></div>
+
+<div id="buttons">
+  <button id="btn1" onclick='btnClick(1)'>Toggle manual</button>
+  <button id="btn2" onclick='btnClick(2)'>Toggle wifi</button>
+  <button id="btn3" onclick='btnClick(3)'>Max acceleraton</button>
+  <button id="btn4" onclick='btnClick(4)'>Slower acceleraton</button>
+  <button id="btn5" onclick='btnClick(5)'>Allow disconect</button>
+</div>
+<div id='gearDiv'>
+  <div id='gearText'></div>
+  <input id='gearRange' type='range' min='1' max='100' onchange='changeGear()' oninput='changeGearText()' value='30'>
+</div>
+</body>
+</html>
+<style>
+html {
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer */
+  -khtml-user-select: none; /* KHTML browsers (e.g. Konqueror) */
+  -webkit-user-select: none; /* Chrome, Safari, and Opera */
+  -webkit-touch-callout: none; /* Disable Android and iOS callouts*/
+}
+input[type='range'] {
+    background:pink;
+    height:18px;
+    border-radius: 8px;
+}
+input[type=range]::-moz-range-thumb {
+  height: 36px;
+  width: 16px;
+  border-radius: 3px;
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 0px;
+}
+#field {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  left: 100px;
+  top: 100px;
+  background-color: wheat;
+  border-radius: 250px;
+  }
+  #gearDiv {
+    position: absolute;
+    top:600px;
+    left: 140px;
+    transform: scale(2.5);
+    }
+    #gearRange {
+      width: 120px;
+      height: 50px;
+      transform: scale(2);
+      transform-origin: 0 0;
+    }
+    #gearText {
+      position: absolute;
+      top: 15px;
+    }
+  #crossVertical {
+    position: absolute;
+    height: 500px;
+    width: 50px;
+    left: 225px;
+    top: 0px;
+    border-radius: 20px;
+    background-color: pink;
+  }
+  #crossHorisontal {
+    position: absolute;
+    height: 50px;
+    width: 500px;
+    left: 0px;
+    top: 225px;
+    border-radius: 20px;
+    background-color: pink;
+  }
+  #joystick {
+    position: absolute;
+    height: 50px;
+    width: 50px;
+    left: 225px;
+    top: 225px;
+    border-radius: 25px;
+    background-color: lightgreen;
+    z-index: 6;
+    transform: scale(1.8);
+  }
+  #buttons {
+    position: absolute;
+    top: 80px;
+    left: 650px;
+    width: 150px;   
+    }
+    #buttons button {
+      font-size: 25px;
+      height: 100px;
+      width: 100%;
+      margin: 8px;
+      background-color: salmon;
+      border-radius: 20px;
+      filter: drop-shadow(0 0 2px red);
+    }
+#gearMeter,#speedMeter {
+  position: relative;
+  top:20px;
+  left: 290px;
+  font-size: 20px;
+}
+  .gearMeter, .speedMeter {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    background: pink;
+  }
+</style>
+<script type='text/javascript'>
+timestep=true;
+function getCoords(elem) {
+  var box = elem.getBoundingClientRect();
+  return {
+    top: box.top+pageYOffset,
+    left: box.left+pageXOffset
+  };
+}
+
+override=true;
+function btnClick(n) {
+  if (n==1) {
+    override=false;
+    btn1.style.setProperty('background-color','lightgreen');
+    btn1.style.setProperty('filter','drop-shadow(0 0 2px green)');
+    btn2.style.setProperty('background-color','salmon');
+    btn2.style.setProperty('filter','drop-shadow(0 0 2px red)');
+    command='/update?state=1';
+    checkingStats=setInterval(sendCommand,200);
+  }
+  else if (n==2) {
+    override=true;
+    btn2.style.setProperty('background-color','lightgreen');
+    btn2.style.setProperty('filter','drop-shadow(0 0 2px green)');
+    btn1.style.setProperty('background-color','salmon');
+    btn1.style.setProperty('filter','drop-shadow(0 0 2px red)');
+    command='/update?state=0';
+    clearInterval(checkingStats);
+    checkingStats=0;
+  }
+  else if (n==3) {
+    btn3.style.setProperty('background-color','lightgreen');
+    btn3.style.setProperty('filter','drop-shadow(0 0 2px green)');
+    btn4.style.setProperty('background-color','salmon');
+    btn4.style.setProperty('filter','drop-shadow(0 0 2px red)');
+    command='/update?fullacceleraton=0';
+  }
+  else if (n==4) {
+    btn4.style.setProperty('background-color','lightgreen');
+    btn4.style.setProperty('filter','drop-shadow(0 0 2px green)');
+    btn3.style.setProperty('background-color','salmon');
+    btn3.style.setProperty('filter','drop-shadow(0 0 2px red)');
+    command='/update?fullacceleraton=1';
+  }
+  else if (n==5) {
+    if (allowDisconnectSwitch==1) {
+      allowDisconnectSwitch=0
+      btn5.style.setProperty('background-color','salmon');
+      btn5.style.setProperty('filter','drop-shadow(0 0 2px green)');
+      command='/update?allowdisconnect=0';
+    }
+    else {
+      allowDisconnectSwitch=1
+      btn5.style.setProperty('background-color','lightgreen');
+      btn5.style.setProperty('filter','drop-shadow(0 0 2px red)');
+      command='/update?allowdisconnect=1';
+    }
+  }
+  sendCommand();
+}
+checkingStats=0;
+allowDisconnectSwitch=0
+
+speedMulti=20;
+function changeGear() {
+  command='/update?gear='+gearRange.value;
+  sendCommand();
+  gearText.innerHTML=gearRange.value;
+}
+function changeGearText() {
+  gearText.innerHTML='Gear '+gearRange.value;
+}
+
+joystick.addEventListener('touchstart', startTouch, false);
+
+function startTouch(e) {
+  document.addEventListener('touchend', endTouch, false);
+  document.addEventListener('touchcancel', endTouch, false);
+  joystick.addEventListener('touchmove', moveTouch, false);
+
+  e.preventDefault();
+  var coords=getCoords(joystick);
+  var shiftX=e.touches[0].pageX-coords.left-20;
+  var shiftY=e.touches[0].pageY-coords.top-20;
+  moveTouch(e);
+  function moveTouch(e) {
+    touches=e.changedTouches;
+    dx=Math.round(e.touches[0].pageX-shiftX-325);
+    dy=Math.round(e.touches[0].pageY-shiftY-325);      
+    distance=Math.pow((Math.pow(dx,2)+Math.pow(dy,2)),0.5);
+    if (distance>225) {
+      dx=Math.round(dx/(distance/225));
+      dy=Math.round(dy/(distance/225));
+    }
+    joystick.style.left=dx+225+'px';
+    joystick.style.top=dy+225+'px';
+    logX.innerHTML=dx;
+    logY.innerHTML=dy;
+    command='/update?XX='+dx+'&YY='+dy;
+    if (timestep==true && override==true) sendCommand();
+  }
+  function endTouch() {
+    document.removeEventListener('touchend', endTouch, false);
+    document.removeEventListener('touchcancel', endTouch, false);
+    joystick.removeEventListener('touchmove', moveTouch, false);
+    joystick.style.left=225+'px';
+    joystick.style.top=225+'px';
+    command='/update?XX='+0+'&YY='+0;
+    if (override==true) sendCommand();
+  }
+  
+}
+
+command='/update?XX='+0+'&YY='+0;
+function sendCommand() {
+  var request = new XMLHttpRequest(); 
+  request.open('GET', command, true);
+  request.addEventListener("readystatechange", () => {
+    if (request.readyState === 4 && request.status === 200) {
+      response=request.responseText;
+      log.innerHTML=response;
+      paint(response);
+    }
+  });
+
+  timestep=false;
+  setTimeout(function() {timestep=true;},100);
+  request.send();
+}
+function paint(response) {
+  info=response.split('Gear=');
+  gear=parseInt(info[1])/12.5;
+  speedString=info[0].split('Speed=');
+  speed=parseInt(speedString[1])/125;
+  gearSquares=document.getElementsByClassName('gearMeter');
+  speedSquares=document.getElementsByClassName('speedMeter');
+  for (j=0;j<gearSquares.length;j++) {
+    if (gear-j>1) gearSquares[j].style.setProperty('background','lightgreen');
+    else if (gear-j<0) gearSquares[j].style.setProperty('background','pink');
+    else {
+      overGear=gear-j;
+      red=Math.round(255-111*overGear);
+      green=Math.round(192+46*overGear);
+      blue=Math.round(203-59*overGear);
+      gearSquares[j].style.setProperty('background','rgb('+red+','+green+','+blue+')');
+    }
+  }
+  if (speed>=0) {
+    for (k=0;k<speedSquares.length;k++) {
+      if (speed-k>1) speedSquares[k].style.setProperty('background','lightgreen');
+      else if (speed-k<0) speedSquares[k].style.setProperty('background','pink');
+      else {
+        overSpeed=speed-k;
+        red=Math.round(255-111*overSpeed);
+        green=Math.round(192+46*overSpeed);
+        blue=Math.round(203-59*overSpeed);
+        speedSquares[k].style.setProperty('background','rgb('+red+','+green+','+blue+')');
+      }
+    }
+  }
+  else {
+    speed=speed*-1;
+    for (k=0;k<speedSquares.length;k++) {
+      if (speed-k>1) speedSquares[k].style.setProperty('background','Crimson');
+      else if (speed-k<0) speedSquares[k].style.setProperty('background','pink');
+      else {
+        overSpeed=speed-k;
+        red=Math.round(255-20*overSpeed);
+        green=Math.round(192-180*overSpeed);
+        blue=Math.round(203-140*overSpeed);
+        speedSquares[k].style.setProperty('background','rgb('+red+','+green+','+blue+')');
+      }
+    }
+  }
+}
+</script>
